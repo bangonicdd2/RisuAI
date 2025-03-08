@@ -49,7 +49,7 @@
             key: '',
             comment: '',
             content: '',
-            mode: 'child',
+            mode: 'localClone',
             insertorder: 100,
             alwaysActive: true,
             secondkey: '',
@@ -74,7 +74,7 @@
         }
     }
     function getParentLoreName(book: loreBook){
-        if(book.mode === 'child'){
+        if(book.mode === 'localClone'){
             const value = getCurrentCharacter()?.globalLore.find(e => e.id === book.id)
             if(value){
                 return value.comment.length === 0 ? value.key.length === 0 ? "Unnamed Lore" : value.key : value.comment
@@ -85,7 +85,7 @@
 
 <div class="w-full flex flex-col pt-2 mt-2 border-t border-t-selected first:pt-0 first:mt-0 first:border-0" data-risu-idx={idx}>
     <div class="flex items-center transition-colors w-full p-1">
-    {#if value.mode !== 'child'}
+    {#if value.mode !== 'localClone'}
         <button class="endflex valuer border-darkborderc" onclick={() => {
             value.secondkey = value.secondkey ?? ''
             open = !open

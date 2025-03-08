@@ -219,7 +219,7 @@ export async function loadLoreBookV3Prompt(){
             }[] = []
             let fullWordMatching = fullWordMatchingSetting
             
-            if(fullLore[i].mode === 'child'){
+            if(fullLore[i].mode === 'localClone'){
                 activated = false
                 for(let j=0;j<i;j++){
                     if(fullLore[j].id === fullLore[i].id){

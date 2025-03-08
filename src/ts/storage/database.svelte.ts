@@ -957,7 +957,7 @@ export interface loreBook{
     insertorder: number
     comment: string
     content: string
-    mode: 'multiple'|'constant'|'normal'|'child',
+    mode: 'multiple'|'constant'|'normal'|'localClone',
     alwaysActive: boolean
     selective:boolean
     extentions?:{
