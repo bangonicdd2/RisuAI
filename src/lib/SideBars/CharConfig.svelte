@@ -4,7 +4,7 @@
     import { saveImage as saveAsset, type Database, type character, type groupChat } from "../../ts/storage/database.svelte";
     import { DBState } from 'src/ts/stores.svelte';
     import { CharConfigSubMenu, MobileGUI, ShowRealmFrameStore, selectedCharID, hypaV3ModalOpen } from "../../ts/stores.svelte";
-    import { PlusIcon, SmileIcon, TrashIcon, UserIcon, ActivityIcon, BookIcon, User, CurlyBraces, Volume2Icon, DownloadIcon, FolderUpIcon, Share2Icon } from 'lucide-svelte'
+    import { PlusIcon, SmileIcon, TrashIcon, UserIcon, ActivityIcon, BookIcon, User, CurlyBraces, Volume2Icon, DownloadIcon, HardDriveUploadIcon, Share2Icon } from 'lucide-svelte'
     import Check from "../UI/GUI/CheckInput.svelte";
     import { addCharEmotion, addingEmotion, getCharImage, rmCharEmotion, selectCharImg, makeGroupImage, removeChar, changeCharImage } from "../../ts/characters";
     import LoreBook from "./LoreBook/LoreBookSetting.svelte";
@@ -531,50 +531,9 @@
         {#if !$MobileGUI}
             <h2 class="mb-2 text-2xl font-bold mt-2">{language.scripts}</h2>
         {/if}
-        <span class="text-textcolor mt-2">Bias <Help key="bias"/></span>
-        <div class="w-full max-w-full border border-selected rounded-md p-2">
 
-        <table class="w-full max-w-full tabler mt-2">
-            <tbody>
-            <tr>
-                <th class="font-medium w-1/2">Bias</th>
-                <th class="font-medium w-1/3">{language.value}</th>
-                <th>
-                    <button class="font-medium cursor-pointer hover:text-green-500" onclick={() => {
-                        if(DBState.db.characters[$selectedCharID].type === 'character'){
-                            (DBState.db.characters[$selectedCharID] as character).bias.push(['', 0])
-                        }
-                    }}><PlusIcon /></button>
-                </th>
-            </tr>
-            {#if (DBState.db.characters[$selectedCharID] as character).bias.length === 0}
-                <tr>
-                    <td colspan="3">{language.noBias}</td>
-
-                </tr>
-            {/if}
-            {#each (DBState.db.characters[$selectedCharID] as character).bias as bias, i}
-                <tr class="align-middle text-center">
-                    <td class="font-medium truncate w-1/2">
-                        <TextInput fullh fullwidth bind:value={(DBState.db.characters[$selectedCharID] as character).bias[i][0]} placeholder="string" />
-                    </td> 
-                    <td class="font-medium truncate w-1/3">
-                        <NumberInput fullh fullwidth bind:value={(DBState.db.characters[$selectedCharID] as character).bias[i][1]} max={100} min={-100} />
-                    </td>
-                    <td>
-                        <button class="font-medium flex justify-center items-center w-full h-full cursor-pointer hover:text-green-500" onclick={() => {
-                            if(DBState.db.characters[$selectedCharID].type === 'character'){
-                                (DBState.db.characters[$selectedCharID] as character).bias.splice(i, 1)
-                            }
-                        }}><TrashIcon /></button>
-                    </td>
-                </tr>
-            {/each}
-            </tbody>
-            
-        </table>
-
-        </div>
+        <span class="text-textcolor mt-2">{language.backgroundHTML} <Help key="backgroundHTML" /></span>
+        <TextAreaInput highlight margin="both" autocomplete="off" bind:value={DBState.db.characters[$selectedCharID].backgroundHTML}></TextAreaInput>
 
         <span class="text-textcolor mt-4">{language.regexScript} <Help key="regexScript"/></span>
         <RegexList bind:value={DBState.db.characters[$selectedCharID].customscript} />
@@ -596,7 +555,7 @@
             }}><DownloadIcon /></button>
             <button class="font-medium cursor-pointer hover:text-green-500" onclick={async () => {
                 DBState.db.characters[$selectedCharID].customscript = await importRegex(DBState.db.characters[$selectedCharID].customscript)
-            }}><FolderUpIcon /></button>
+            }}><HardDriveUploadIcon /></button>
         </div>
 
         <span class="text-textcolor mt-4">{language.triggerScript} <Help key="triggerScript"/></span>
@@ -909,7 +868,51 @@
     {#if !$MobileGUI}
         <h2 class="mb-2 text-2xl font-bold mt-2">{language.advancedSettings}</h2>
     {/if}
-    {#if DBState.db.characters[$selectedCharID].type !== 'group'}
+        {#if DBState.db.characters[$selectedCharID].type !== 'group'}
+        <span class="text-textcolor mt-2">Bias <Help key="bias"/></span>
+        <div class="w-full max-w-full border border-selected rounded-md p-2 mb-2">
+
+        <table class="w-full max-w-full tabler mt-2">
+            <tbody>
+            <tr>
+                <th class="font-medium w-1/2">Bias</th>
+                <th class="font-medium w-1/3">{language.value}</th>
+                <th>
+                    <button class="font-medium cursor-pointer hover:text-green-500" onclick={() => {
+                        if(DBState.db.characters[$selectedCharID].type === 'character'){
+                            (DBState.db.characters[$selectedCharID] as character).bias.push(['', 0])
+                        }
+                    }}><PlusIcon /></button>
+                </th>
+            </tr>
+            {#if (DBState.db.characters[$selectedCharID] as character).bias.length === 0}
+                <tr>
+                    <td colspan="3">{language.noBias}</td>
+
+                </tr>
+            {/if}
+            {#each (DBState.db.characters[$selectedCharID] as character).bias as bias, i}
+                <tr class="align-middle text-center">
+                    <td class="font-medium truncate w-1/2">
+                        <TextInput fullh fullwidth bind:value={(DBState.db.characters[$selectedCharID] as character).bias[i][0]} placeholder="string" />
+                    </td> 
+                    <td class="font-medium truncate w-1/3">
+                        <NumberInput fullh fullwidth bind:value={(DBState.db.characters[$selectedCharID] as character).bias[i][1]} max={100} min={-100} />
+                    </td>
+                    <td>
+                        <button class="font-medium flex justify-center items-center w-full h-full cursor-pointer hover:text-green-500" onclick={() => {
+                            if(DBState.db.characters[$selectedCharID].type === 'character'){
+                                (DBState.db.characters[$selectedCharID] as character).bias.splice(i, 1)
+                            }
+                        }}><TrashIcon /></button>
+                    </td>
+                </tr>
+            {/each}
+            </tbody>
+            
+        </table>
+        </div>
+
         <span class="text-textcolor">{language.exampleMessage} <Help key="exampleMessage"/></span>
         <TextAreaInput highlight margin="both" autocomplete="off" bind:value={DBState.db.characters[$selectedCharID].exampleMessage}></TextAreaInput>
 
@@ -935,9 +938,6 @@
             <span class="text-textcolor">{language.scenario} <Help key="scenario" unrecommended/></span>
             <TextAreaInput highlight margin="both" autocomplete="off" bind:value={DBState.db.characters[$selectedCharID].scenario}></TextAreaInput>
         {/if}
-
-        <span class="text-textcolor mt-2">{language.backgroundHTML} <Help key="backgroundHTML" /></span>
-        <TextAreaInput highlight margin="both" autocomplete="off" bind:value={DBState.db.characters[$selectedCharID].backgroundHTML}></TextAreaInput>
 
         <span class="text-textcolor mt-2">{language.defaultVariables} <Help key="defaultVariables" /></span>
         <TextAreaInput margin="both" autocomplete="off" bind:value={DBState.db.characters[$selectedCharID].defaultVariables}></TextAreaInput>
@@ -1087,6 +1087,10 @@
         <div class="flex items-center mt-4">
             <Check bind:check={DBState.db.characters[$selectedCharID].utilityBot} name={language.utilityBot}/>
             <span> <Help key="utilityBot" name={language.utilityBot}/></span>
+        </div>
+
+        <div class="flex items-center mt-4">
+            <Check bind:check={DBState.db.characters[$selectedCharID].escapeOutput} name={language.escapeOutput}/>
         </div>
 
         {#if DBState.db.supaModelType !== 'none' && DBState.db.hypav2}

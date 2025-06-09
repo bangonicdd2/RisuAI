@@ -633,7 +633,7 @@
 
             {#if toggleStickers}
                 <div class="ml-4 flex flex-wrap">
-                    <AssetInput bind:currentCharacter={currentCharacter} onSelect={(additionalAsset)=>{
+                    <AssetInput currentCharacter={currentCharacter} onSelect={(additionalAsset)=>{
                         let fileType = 'img'
                         if(additionalAsset.length > 2 && additionalAsset[2]) {
                             const fileExtension = additionalAsset[2]

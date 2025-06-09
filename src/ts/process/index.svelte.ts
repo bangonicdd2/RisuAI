@@ -26,7 +26,7 @@ import { addRerolls } from "./prereroll";
 import { runImageEmbedding } from "./transformers";
 import { hanuraiMemory } from "./memory/hanuraiMemory";
 import { hypaMemoryV2 } from "./memory/hypav2";
-import { runLuaEditTrigger } from "./lua";
+import { runLuaEditTrigger } from "./scriptings";
 import { getGlobalChatVar, parseChatML } from "../parser.svelte";
 import { getModelInfo, LLMFlags } from "../model/modellist";
 import { hypaMemoryV3 } from "./memory/hypav3";
@@ -57,6 +57,14 @@ export interface OpenAIChatFull extends OpenAIChat{
         name: string
         arguments:string
     }
+    tool_calls?:{
+        function: {
+            name: string
+            arguments:string
+        }
+        id:string
+        type:'function'
+    }[]
 }
 
 export interface requestTokenPart{
@@ -400,15 +408,13 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     if(currentChat.note){
         unformated.authorNote.push({
             role: 'system',
-            content: risuChatParser(currentChat.note, {chara: currentChar}),
-            memo: 'authornote'
+            content: risuChatParser(currentChat.note, {chara: currentChar})
         })
     }
     else if(getAuthorNoteDefaultText() !== ''){
         unformated.authorNote.push({
             role: 'system',
-            content: risuChatParser(getAuthorNoteDefaultText(), {chara: currentChar}),
-            memo: 'authornote'
+            content: risuChatParser(getAuthorNoteDefaultText(), {chara: currentChar})
         })
     }
 
@@ -438,8 +444,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
 
         unformated.description.push({
             role: 'system',
-            content: description,
-            memo: 'description',
+            content: description
         })
 
         if(nowChatroom.type === 'group'){
@@ -460,8 +465,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     for(const lorebook of normalActives){
         unformated.lorebook.push({
             role: lorebook.role,
-            content: risuChatParser(lorebook.prompt, {chara: currentChar}),
-            memo: 'lore',
+            content: risuChatParser(lorebook.prompt, {chara: currentChar})
         })
     }
 
@@ -485,8 +489,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     if(DBState.db.personaPrompt){
         unformated.personaPrompt.push({
             role: 'system',
-            content: risuChatParser(getPersonaPrompt(), {chara: currentChar}),
-            memo: 'persona',
+            content: risuChatParser(getPersonaPrompt(), {chara: currentChar})
         })
     }
     
@@ -511,8 +514,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     for(const lorebook of postEverythingLorebooks){
         unformated.postEverything.push({
             role: lorebook.role,
-            content: risuChatParser(lorebook.prompt, {chara: currentChar}),
-            memo: 'postEverything',
+            content: risuChatParser(lorebook.prompt, {chara: currentChar})
         })
     }
 
@@ -1100,10 +1102,15 @@ export async function sendChat(chatProcessIndex = -1,arg:{
         }
     }
 
-    type MemoType = 'persona' | 'description' | 'authornote' | 'supaMemory';
-    const promptBodyMap: Record<MemoType, string[]> = { persona: [], description: [], authornote: [], supaMemory: [] };
-    function pushPromptInfoBody(memo: MemoType, fmt: string) {
-        promptBodyMap[memo].push(risuChatParser(fmt));
+    let promptBodyformatedForChatStore: OpenAIChat[] = []
+    function pushPromptInfoBody(role: "function" | "system" | "user" | "assistant", fmt: string, promptBody: OpenAIChat[]) {
+        if(!fmt.trim()){
+            return
+        }
+        promptBody.push({
+            role: role,
+            content: risuChatParser(fmt),
+        })
     }
 
     if(promptTemplate){
@@ -1118,7 +1125,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                             pmt[i].content = risuChatParser(positionParser(card.innerFormat), {chara: currentChar}).replace('{{slot}}', pmt[i].content)
 
                             if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
-                                pushPromptInfoBody(card.type, card.innerFormat)
+                                pushPromptInfoBody(pmt[i].role, card.innerFormat, promptBodyformatedForChatStore)
                             }
                         }
                     }
@@ -1133,7 +1140,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                             pmt[i].content = risuChatParser(positionParser(card.innerFormat), {chara: currentChar}).replace('{{slot}}', pmt[i].content)
                             
                             if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
-                                pushPromptInfoBody(card.type, card.innerFormat)
+                                pushPromptInfoBody(pmt[i].role, card.innerFormat, promptBodyformatedForChatStore)
                             }
                         }
                     }
@@ -1148,7 +1155,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                             pmt[i].content = risuChatParser(positionParser(card.innerFormat), {chara: currentChar}).replace('{{slot}}', pmt[i].content || card.defaultText || '')
                             
                             if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
-                                pushPromptInfoBody(card.type, card.innerFormat)
+                                pushPromptInfoBody(pmt[i].role, card.innerFormat, promptBodyformatedForChatStore)
                             }
                         }
                     }
@@ -1204,6 +1211,10 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                     const prompt:OpenAIChat ={
                         role: convertRole[card.role],
                         content: content
+                    }
+
+                    if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat && card.type2 !== 'globalNote'){
+                        pushPromptInfoBody(prompt.role, prompt.content, promptBodyformatedForChatStore)
                     }
 
                     pushPrompts([prompt])
@@ -1267,7 +1278,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                             pmt[i].content = risuChatParser(card.innerFormat, {chara: currentChar}).replace('{{slot}}', pmt[i].content)
 
                             if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
-                                pushPromptInfoBody('supaMemory', card.innerFormat)
+                                pushPromptInfoBody(pmt[i].role, card.innerFormat, promptBodyformatedForChatStore)
                             }
                         }
                     }
@@ -1306,6 +1317,13 @@ export async function sendChat(chatProcessIndex = -1,arg:{
         return v
     })
 
+    if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
+        promptBodyformatedForChatStore = promptBodyformatedForChatStore.map((v) => {
+            v.content = v.content.trim()
+            return v
+        })
+    }
+
 
     if(currentChar.depth_prompt && currentChar.depth_prompt.prompt && currentChar.depth_prompt.prompt.length > 0){
         //depth_prompt
@@ -1317,6 +1335,11 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     }
 
     formated = await runLuaEditTrigger(currentChar, 'editRequest', formated)
+
+    if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
+        promptBodyformatedForChatStore = await runLuaEditTrigger(currentChar, 'editRequest', promptBodyformatedForChatStore)
+        promptInfo.promptText = promptBodyformatedForChatStore
+    }
 
     //token rechecking
     let inputTokens = 0
@@ -1374,7 +1397,8 @@ export async function sendChat(chatProcessIndex = -1,arg:{
         continue: arg.continue,
         chatId: generationId,
         imageResponse: DBState.db.outputImageModal,
-        previewBody: arg.previewPrompt
+        previewBody: arg.previewPrompt,
+        escape: nowChatroom.type === 'character' && nowChatroom.escapeOutput
     }, 'model', abortSignal)
 
     console.log(req)
@@ -1386,29 +1410,6 @@ export async function sendChat(chatProcessIndex = -1,arg:{
     if(arg.previewPrompt && req.type === 'success'){
         previewBody = req.result
         return true
-    }
-
-    
-    function isPromptMemo(m: string): m is MemoType {
-        return ['persona', 'description', 'authornote', 'supaMemory'].includes(m);
-    }
-    if(DBState.db.promptInfoInsideChat && DBState.db.promptTextInfoInsideChat){
-        const promptBodyInfo: OpenAIChat[] = formated.flatMap(format => {
-            if (isPromptMemo(format.memo)) {
-                return promptBodyMap[format.memo].map(content => ({
-                    role: format.role,
-                    content,
-                }))
-            }
-
-            if (format.memo == null) {
-                return [format]
-            }
-
-            return []
-        })
-        
-        promptInfo.promptText = promptBodyInfo
     }
 
     let result = ''
@@ -1438,6 +1439,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                 time: Date.now(),
                 generationInfo,
                 promptInfo,
+                chatId: generationId,
             })
         }
         DBState.db.characters[selectedChar].chats[selectedChat].isStreaming = true
@@ -1519,6 +1521,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                     time: Date.now(),
                     generationInfo,
                     promptInfo,
+                    chatId: generationId,
                 }       
                 if(inlayResult.promise){
                     const p = await inlayResult.promise
@@ -1533,6 +1536,7 @@ export async function sendChat(chatProcessIndex = -1,arg:{
                     time: Date.now(),
                     generationInfo,
                     promptInfo,
+                    chatId: generationId,
                 })
                 const ind = DBState.db.characters[selectedChar].chats[selectedChat].message.length - 1
                 if(inlayResult.promise){
